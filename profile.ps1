@@ -1,0 +1,308 @@
+######################################################
+# For SSH Tab Complition
+######################################################
+using namespace System.Management.Automation
+
+######################################################
+# Login Check if Admin or not
+######################################################
+if([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544"))
+{
+    write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
+    #write-host "# ACHTUNG DIE POWERSHELL SESSION LAEUFT MIT ADMINISTRATOR RECHTEN!!!         #" -ForegroundColor Yellow -BackgroundColor Red
+    write-host "# Attention This Session runs with elevated Privilege!!!                     #" -ForegroundColor Yellow -BackgroundColor Red
+    write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
+}
+else
+{}
+
+######################################################
+# Commandline Loggin
+######################################################
+$PSlogging = "P:\PSlogging"
+if((Test-Path $PSlogging))
+{
+    $PSlogging = "P:\PSlogging"
+}
+else
+{
+    $PSlogging = "C:\PSlogging"
+}
+
+######################################################
+# Powershell Transcript Logging
+######################################################
+if (-not (Test-Path $PSlogging))
+{
+    New-Item -Type Directory $PSlogging
+}
+$dateStamp = Get-Date -Format ('yyyy-MM-dd_HH-mm-ss')
+try
+{
+    Get-ChildItem "$PSlogging" -Recurse | Where-Object { $_.LastWriteTime -lt (get-date).AddDays(-60) } | Remove-Item -Force -Confirm:$false
+    Start-Transcript "$PSlogging\PSconsole_$dateStamp.txt" | Out-Null
+}
+catch [System.Management.Automation.PSNotSupportedException]
+{
+    # ISE doesn't allow transcripts.
+    Write-Host "No transcript. Not supported in this host."
+}
+
+######################################################
+# MOTD
+######################################################
+
+# write-host "########################################################"     -ForegroundColor Green
+# Write-Host "Microsoft Windows Info"                                       -ForegroundColor Green
+# write-host "Windows System : $((Get-WmiObject win32_operatingsystem).caption) ($((Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ReleaseId))"   -ForegroundColor Green
+# write-host "Windows Version: $(([Environment]::OSVersion).VersionString)" -ForegroundColor Green
+# Write-Host "########################################################"     -ForegroundColor Green
+# Write-Host "Network Info" -ForegroundColor Green
+# write-host "Hostname  : $($env:COMPUTERNAME)" -ForegroundColor Green
+# Write-Host "Domain    : $($env:USERDNSDOMAIN)" -ForegroundColor Green
+
+
+$bootuptime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
+$CurrentDate = Get-Date
+$uptime = $CurrentDate - $bootuptime
+
+write-host "Hello Friend!" -ForegroundColor Green
+write-host "########################################################" -ForegroundColor Green
+Write-host "System Uptime: $($uptime.days) Days, $($uptime.Hours) Hours, $($uptime.Minutes) Minutes" -ForegroundColor Green
+
+$Interface = Get-WmiObject win32_networkadapterconfiguration | WHERE {($_.IPAddress -ne $null) -and ($_.DefaultIPGateway -ne $null)}
+
+#$Interface = Get-WmiObject win32_networkadapterconfiguration `
+#| Select-Object -Property @{name='IPAddress';Expression={($_.IPAddress[0])}},MacAddress `
+#| Where-Object IPAddress -Like '10.*'
+
+if ($null -eq $interface)
+{
+    Write-Host "No Active Connection!" -ForegroundColor Yellow -BackgroundColor Red
+}
+else
+{
+    write-host "IPAdress     : $($Interface.IPAddress[0])" -ForegroundColor Green
+    write-host "MAC-Adress   : $($Interface.MacAddress)" -ForegroundColor Green
+}
+write-host "########################################################" -ForegroundColor Green
+
+# write-host "Promt Log Folder : $($PSlogging)" -ForegroundColor Green
+# write-host "########################################################" -ForegroundColor Green
+
+
+######################################################
+# List Files and Folders (Linux Like)
+######################################################
+Function Format-FileSize() {
+    Param ([int]$size)
+    If     ($size -gt 1TB) {[string]::Format("{0:0.00} TB", $size / 1TB)}
+    ElseIf ($size -gt 1GB) {[string]::Format("{0:0.00} GB", $size / 1GB)}
+    ElseIf ($size -gt 1MB) {[string]::Format("{0:0.00} MB", $size / 1MB)}
+    ElseIf ($size -gt 1KB) {[string]::Format("{0:0.00} kB", $size / 1KB)}
+    ElseIf ($size -gt 0)   {[string]::Format("{0:0.00} Byte", $size)}
+    Else                   {""}
+}
+
+function Get-ItemPermissions
+{
+    write-host "Possible Mode Values: d - Directory, a - Archive, r - Read-only,
+                      h - Hidden, s - System, l - Reparse point, symlink, etc."
+    Get-ChildItem $Args[0] -Force |
+        Format-Table Mode, @{N='Owner';E={(Get-Acl $_.FullName).Owner}}, @{N="FileSize";E={ Format-FileSize -size $_.Length }}, LastWriteTime, @{N='Name';E={if($_.Target) {$_.Name+' -> '+$_.Target} else {$_.Name}}}
+}
+
+######################################################
+# Tab Complition Section
+# If Problems occure install Latest PSReadLine Module
+# Install-Module -Name PSReadLine -RequiredVersion 2.1.0 -Force
+######################################################
+# Shows navigable menu of all options when hitting Tab
+Set-PSReadlineKeyHandler -Key Tab -Function MenuComplete
+
+# Autocompletion for arrow keys
+Set-PSReadlineKeyHandler -Key UpArrow -Function HistorySearchBackward
+Set-PSReadlineKeyHandler -Key DownArrow -Function HistorySearchForward
+Set-PSReadLineOption -HistorySearchCursorMovesToEnd
+
+######################################################
+# Add and Delete Matching Braces and Quotes
+######################################################
+# Insert matching braces
+Set-PSReadLineKeyHandler -Key '(','{','[' `
+                         -BriefDescription InsertPairedBraces `
+                         -LongDescription "Insert matching braces" `
+                         -ScriptBlock {
+    param($key, $arg)
+
+    $closeChar = switch ($key.KeyChar)
+    {
+         '(' { [char]')'; break }
+         '{' { [char]'}'; break }
+         '[' { [char]']'; break }
+    }
+
+    $selectionStart = $null
+    $selectionLength = $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetSelectionState([ref]$selectionStart, [ref]$selectionLength)
+
+    $line = $null
+    $cursor = $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+     
+    if ($selectionStart -ne -1)
+    {
+      # Text is selected, wrap it in brackets
+      [Microsoft.PowerShell.PSConsoleReadLine]::Replace($selectionStart, $selectionLength, $key.KeyChar + $line.SubString($selectionStart, $selectionLength) + $closeChar)
+      [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($selectionStart + $selectionLength + 2)
+    } else {
+      # No text is selected, insert a pair
+      [Microsoft.PowerShell.PSConsoleReadLine]::Insert("$($key.KeyChar)$closeChar")
+      [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($cursor + 1)
+    }
+}
+
+# Insert matching Quotes
+Set-PSReadLineKeyHandler -Key "'",'"' `
+                         -BriefDescription InsertPairedBraces `
+                         -LongDescription "Insert matching Quotes" `
+                         -ScriptBlock {
+    param($key, $arg)
+
+    $closeChar = switch ($key.KeyChar)
+    {
+         "'" { [char]"'"; break }
+         '"' { [char]'"'; break }
+    }
+
+    $selectionStart = $null
+    $selectionLength = $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetSelectionState([ref]$selectionStart, [ref]$selectionLength)
+
+    $line = $null
+    $cursor = $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+     
+    if ($selectionStart -ne -1)
+    {
+      # Text is selected, wrap it in brackets
+      [Microsoft.PowerShell.PSConsoleReadLine]::Replace($selectionStart, $selectionLength, $key.KeyChar + $line.SubString($selectionStart, $selectionLength) + $closeChar)
+      [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($selectionStart + $selectionLength + 2)
+    } else {
+      # No text is selected, insert a pair
+      [Microsoft.PowerShell.PSConsoleReadLine]::Insert("$($key.KeyChar)$closeChar")
+      [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($cursor + 1)
+    }
+}
+
+#  Delete previous character or matching quotes/parens/braces
+Set-PSReadLineKeyHandler -Key Backspace `
+                         -BriefDescription SmartBackspace `
+                         -LongDescription "Delete previous character or matching quotes/parens/braces" `
+                         -ScriptBlock {
+    param($key, $arg)
+
+    $line = $null
+    $cursor = $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+
+    if ($cursor -gt 0)
+    {
+        $toMatch = $null
+        if ($cursor -lt $line.Length)
+        {
+            switch ($line[$cursor])
+            {
+                 '"' { $toMatch = '"'; break }
+                 "'" { $toMatch = "'"; break }
+                 ')' { $toMatch = '('; break }
+                 ']' { $toMatch = '['; break }
+                 '}' { $toMatch = '{'; break }
+            }
+        }
+
+        if ($toMatch -ne $null -and $line[$cursor-1] -eq $toMatch)
+        {
+            [Microsoft.PowerShell.PSConsoleReadLine]::Delete($cursor - 1, 2)
+        }
+        else
+        {
+            [Microsoft.PowerShell.PSConsoleReadLine]::BackwardDeleteChar($key, $arg)
+        }
+    }
+}
+
+
+################################################################################
+# SSH, SCP and sftp Host Tab Complition from ssh Config file
+# https://gist.github.com/backerman/2c91d31d7a805460f93fe10bdfa0ffb0#comments
+################################################################################
+Register-ArgumentCompleter -CommandName ssh,scp,sftp -Native -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    
+    # KnownHost file
+    #$knownHosts = Get-Content ${Env:HOMEPATH}\.ssh\known_hosts `
+    #| ForEach-Object { ([string]$_).Split(' ')[0] } `
+    #| ForEach-Object { $_.Split(',') } `
+    #| Sort-Object -Unique
+    
+    # Config File
+    $hosts = Get-Content $Env:USERPROFILE\.ssh\config `
+    | Select-String -Pattern "^Host "`
+    | ForEach-Object { $_ -replace "host ", "" }`
+    | Sort-Object -Unique
+
+    # For now just assume it's a hostname.
+    $textToComplete = $wordToComplete
+    $generateCompletionText = {
+        param($x)
+        $x
+    }
+    if ($wordToComplete -match "^(?<user>[-\w/\\]+)@(?<host>[-.\w]+)$") {
+        $textToComplete = $Matches["host"]
+        $generateCompletionText = {
+            param($hostname)
+            #$Matches["user"] + "@" + $hostname
+            $hostname
+        }
+    }
+
+    $hosts `
+    | Where-Object { $_ -like "${textToComplete}*" } `
+    | ForEach-Object { [CompletionResult]::new((&$generateCompletionText($_)), $_, [CompletionResultType]::ParameterValue, $_) }
+}
+
+######################################################
+# Aliases
+# New-Alias NewCommand Get-ChildItem
+#######################################################
+New-Alias -Name "ll" -Value Get-ItemPermissions
+
+#######################################################
+# Prompt Section
+#######################################################
+function global:prompt
+{
+    $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+    Write-Host $Content -ForegroundColor Yellow
+    return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($pwd.path)) #>"
+    #return " # "
+}
+
+#######################################################
+# Create Custom Logfile
+#######################################################
+function Write-LogFile([string]$Message,[string]$Status,[string]$LogPath)
+{
+    $LogFileDate = Get-date -Format "yyyy-MM-dd HH:mm:ss"
+    $DEKOcut = "================================================="
+
+    Switch ($Status)
+      {
+        INFO { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        WARN { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Yellow -ForegroundColor Black ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        FAIL { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Red -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        OKAY { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        DEKO { Write-Host $DEKOcut ; $DEKOcut | Out-File  $LogPath -Append -Encoding utf8 }
+      }
+}
