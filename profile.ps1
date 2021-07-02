@@ -19,16 +19,15 @@ else
 ######################################################
 # Commandline Loggin
 ######################################################
-$PSlogging = "C:\PSlogging"
+$PSlogging = "P:\PSlogging"
 if((Test-Path $PSlogging))
 {
-    $PSlogging = "C:\PSlogging"
+    $PSlogging = "P:\PSlogging"
 }
-<#else
+else
 {
     $PSlogging = "C:\PSlogging"
 }
-#>
 
 ######################################################
 # Powershell Transcript Logging
