@@ -8,6 +8,7 @@ using namespace System.Management.Automation
 ######################################################
 if([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544"))
 {
+    $IsAdmin = "Yes"
     write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
     #write-host "# ACHTUNG DIE POWERSHELL SESSION LAEUFT MIT ADMINISTRATOR RECHTEN!!!         #" -ForegroundColor Yellow -BackgroundColor Red
     write-host "# Attention This Session runs with elevated Privilege!!!                     #" -ForegroundColor Yellow -BackgroundColor Red
@@ -273,19 +274,67 @@ Register-ArgumentCompleter -CommandName ssh,scp,sftp -Native -ScriptBlock {
 }
 
 ######################################################
+# Check Local Git Repo Status
+#######################################################
+Function GitStat {
+    param()
+    
+    $GetGit = Get-Command git -ErrorAction SilentlyContinue
+    if(-not [system.string]::IsNullOrEmpty($GetGit.Name))
+    {
+        if (Test-Path .git)
+        {
+            $s = (git status --porcelain).trim()
+            $untracked = ($s). Where({$_ -match "^\?\?"})
+            $add = ($s).where({$_ -match "^A"})
+            $del = ($s).where({$_ -match "^D"})
+            $mod = ($s).where({$_ -match "^M"})
+            [regex]$rx = "\*.\S+"
+            #get the matching git branch which has the * and split the string to get only the branch name
+            $branch = $rx.match((git branch)).value.split()[-1]
+            "[git-$branch : A$($add.count)|M$($mod.count)|D$($del.count)|Ut$($untracked.count)]"
+        }
+    }
+}
+
+######################################################
+# cd Linux-Like in to HomeDirectrory
+#######################################################
+function ChangeDirectory {
+    param(
+        [parameter(Mandatory=$false)]
+        $path
+    )
+    if ( $PSBoundParameters.ContainsKey('path') ) {
+        Set-Location $path
+    } else {
+        Set-Location $home
+    }
+}
+
+
+######################################################
 # Aliases
 # New-Alias NewCommand Get-ChildItem
 #######################################################
 New-Alias -Name "ll" -Value Get-ItemPermissions
+Remove-Item alias:\cd
+New-Alias cd ChangeDirectory
 
 #######################################################
 # Prompt Section
 #######################################################
 function global:prompt
 {
+    # If Prompt is in Admin Mode then set # else set $
+    if($IsAdmin -eq "Yes"){$PromptSign = "#"}else{$PromptSign = "$"}
+
+    # replace the path from USERPROFILE environment variable (if it’s there) in current path by ~
+    $currentDir = $pwd.Path.Replace($env:USERPROFILE, "~")
+
     $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
     Write-Host $Content -ForegroundColor Yellow
-    return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($pwd.path)) #>"
+    return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $(GitStat) $($PromptSign)"
     #return " # "
 }
 
