@@ -277,22 +277,32 @@ Register-ArgumentCompleter -CommandName ssh,scp,sftp -Native -ScriptBlock {
 # Check Local Git Repo Status
 #######################################################
 Function GitStat {
-    param()
     
-    $GetGit = Get-Command git -ErrorAction SilentlyContinue
+    $GetGit = Get-Command git.exe -ErrorAction SilentlyContinue
     if(-not [system.string]::IsNullOrEmpty($GetGit.Name))
     {
         if (Test-Path .git)
         {
-            $s = (git status --porcelain).trim()
-            $untracked = ($s). Where({$_ -match "^\?\?"})
-            $add = ($s).where({$_ -match "^A"})
-            $del = ($s).where({$_ -match "^D"})
-            $mod = ($s).where({$_ -match "^M"})
-            [regex]$rx = "\*.\S+"
-            #get the matching git branch which has the * and split the string to get only the branch name
-            $branch = $rx.match((git branch)).value.split()[-1]
-            "[git-$branch : A$($add.count)|M$($mod.count)|D$($del.count)|Ut$($untracked.count)]"
+            $s = git.exe status #--porcelain
+            
+            if(-not $s.Contains("nothing to commit, working tree clean"))
+            {
+                $st = (git.exe status --porcelain).trim()
+                $untracked = ($st). Where({$_ -match "^\?\?"})
+                $add = ($st).where({$_ -match "^A"})
+                $del = ($st).where({$_ -match "^D"})
+                $mod = ($st).where({$_ -match "^M"})
+                [regex]$rx = "\*.\S+"
+                #get the matching git branch which has the * and split the string to get only the branch name
+                $branch = $rx.match((git.exe branch)).value.split()[-1]
+                return "[git-$branch : A$($add.count)|M$($mod.count)|D$($del.count)|Ut$($untracked.count)]"
+            }
+            else
+            {
+                [regex]$rx = "\*.\S+"
+                $branch = $rx.match((git.exe branch)).value.split()[-1]
+                return "[git-$branch]"
+            }
         }
     }
 }
