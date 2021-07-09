@@ -284,7 +284,7 @@ Function GitStat
     {
         if (Test-Path .git)
         {
-            $s = (git.exe status --porcelain).trim()
+            $s = git.exe status --porcelain
             $untracked = ($s). Where({$_ -match "^\?\?"})
             $add = ($s).where({$_ -match "^A"})
             $del = ($s).where({$_ -match "^D"})
