@@ -341,10 +341,10 @@ function global:prompt
 
     # replace the path from USERPROFILE environment variable (if it’s there) in current path by ~
     $currentDir = $pwd.Path.Replace($env:USERPROFILE, "~")
-
+    $GitStatus = GitStat
     $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
     Write-Host $Content -ForegroundColor Yellow
-    return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $(GitStat) $($PromptSign)"
+    return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $GitStatus $($PromptSign)"
     #return " # "
 }
 
