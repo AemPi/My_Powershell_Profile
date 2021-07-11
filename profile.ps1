@@ -94,6 +94,7 @@ write-host "########################################################" -Foregroun
 
 ######################################################
 # List Files and Folders (Linux Like)
+# https://superuser.com/questions/468782/show-human-readable-file-sizes-in-the-default-powershell-ls-command | From Indrek
 ######################################################
 Function Format-FileSize() {
     Param ([int]$size)
@@ -128,6 +129,7 @@ Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 
 ######################################################
 # Add and Delete Matching Braces and Quotes
+# https://sergeyvasin.com/2020/08/04/quotes-and-brackets/
 ######################################################
 # Insert matching braces
 Set-PSReadLineKeyHandler -Key '(','{','[' `
