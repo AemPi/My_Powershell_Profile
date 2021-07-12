@@ -115,6 +115,20 @@ function Get-ItemPermissions
 }
 
 ######################################################
+# sudo for Powershell (Linux Like)
+# https://www.elasticsky.de/2012/12/powershell-sudo/
+######################################################
+function elevate-process
+{
+    $file, [string]$arguments = $args
+    $psi = new-object System.Diagnostics.ProcessStartInfo $file
+    $psi.Arguments = $arguments
+    $psi.Verb = "runas"
+    $psi.WorkingDirectory = get-location
+    [System.Diagnostics.Process]::Start($psi) | out-null
+}
+
+######################################################
 # Tab Complition Section
 # If Problems occure install Latest PSReadLine Module
 # Install-Module -Name PSReadLine -RequiredVersion 2.1.0 -Force
@@ -332,6 +346,7 @@ function ChangeDirectory {
 New-Alias -Name "ll" -Value Get-ItemPermissions
 Remove-Item alias:\cd
 New-Alias cd ChangeDirectory
+New-Alias -Name sudo -Value elevate-process
 
 #######################################################
 # Prompt Section
