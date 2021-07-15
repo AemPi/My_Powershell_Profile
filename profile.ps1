@@ -135,13 +135,28 @@ function elevate-process
 ######################################################
 # Shows navigable menu of all options when hitting Tab
 Set-PSReadlineKeyHandler -Key Tab -Function MenuComplete
-
 # Autocompletion for arrow keys
 Set-PSReadlineKeyHandler -Key UpArrow -Function HistorySearchBackward
 Set-PSReadlineKeyHandler -Key DownArrow -Function HistorySearchForward
+#Indicates that the cursor moves to the end of commands that you load from history by using a search.
+# When this parameter is set to $False, the cursor remains at the position it was when you pressed the up or down arrows.
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
+# Responds to various error and ambiguous conditions Default is Audible
+Set-PSReadLineOption -BellStyle None
+# Linux like History File
+Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_histroy.txt"
+# Default History Count is 4096
+Set-PSReadLineOption -MaximumHistoryCount 1000
+# prevents to write lines that match password|asplaintext|token|key|secret to the log.
+Set-PSReadLineOption -AddToHistoryHandler {
+    param([string]$line)
+
+    $sensitive = "password|asplaintext|token|key|secret"
+    return ($line -notmatch $sensitive)
+}
 
 ######################################################
+# Smart Insert
 # Add and Delete Matching Braces and Quotes
 # https://sergeyvasin.com/2020/08/04/quotes-and-brackets/
 ######################################################
