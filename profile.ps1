@@ -35,7 +35,7 @@ else
 ######################################################
 if (-not (Test-Path $PSlogging))
 {
-    New-Item -Type Directory $PSlogging
+    New-Item -Type Directory $PSlogging | Out-Null
 }
 $dateStamp = Get-Date -Format ('yyyy-MM-dd_HH-mm-ss')
 try
@@ -371,7 +371,7 @@ function global:prompt
     # If Prompt is in Admin Mode then set # else set $
     if($IsAdmin -eq "Yes"){$PromptSign = "#"}else{$PromptSign = "$"}
 
-    # replace the path from USERPROFILE environment variable (if it’s there) in current path by ~
+    # replace the path from USERPROFILE environment variable (if itï¿½s there) in current path by ~
     $currentDir = $pwd.Path.Replace($env:USERPROFILE, "~")
     $GitStatus = GitStat
     $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
