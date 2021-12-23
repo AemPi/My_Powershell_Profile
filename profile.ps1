@@ -17,6 +17,7 @@ if([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -ma
 else
 {}
 
+<#
 ######################################################
 # Commandline Loggin
 ######################################################
@@ -33,6 +34,7 @@ else
 ######################################################
 # Powershell Transcript Logging
 ######################################################
+
 if (-not (Test-Path $PSlogging))
 {
     New-Item -Type Directory $PSlogging | Out-Null
@@ -48,7 +50,7 @@ catch [System.Management.Automation.PSNotSupportedException]
     # ISE doesn't allow transcripts.
     Write-Host "No transcript. Not supported in this host."
 }
-
+#>
 ######################################################
 # MOTD
 ######################################################
