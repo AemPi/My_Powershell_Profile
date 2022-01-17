@@ -146,7 +146,7 @@ Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 # Responds to various error and ambiguous conditions Default is Audible
 Set-PSReadLineOption -BellStyle None
 # Linux like History File
-Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_histroy.txt"
+Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_history.txt"
 # Default History Count is 4096
 Set-PSReadLineOption -MaximumHistoryCount 1000
 # prevents to write lines that match password|asplaintext|token|key|secret to the log.
