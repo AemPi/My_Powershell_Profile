@@ -1,4 +1,9 @@
 ######################################################
+# Requirements
+######################################################
+# - Latest PSReadLine Module
+
+######################################################
 # For SSH Tab Complition
 ######################################################
 using namespace System.Management.Automation
@@ -147,6 +152,10 @@ Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -BellStyle None
 # Linux like History File
 Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_history.txt"
+# enable history-based suggestions
+Set-PSReadLineOption -PredictionSource History
+Set-PSReadLineOption -PredictionViewStyle InlineView
+Set-PSReadLineOption -Colors @{ InlinePrediction = "#696969" }
 # Default History Count is 4096
 Set-PSReadLineOption -MaximumHistoryCount 1000
 # prevents to write lines that match password|asplaintext|token|key|secret to the log.
