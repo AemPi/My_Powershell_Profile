@@ -155,7 +155,12 @@ Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_history.txt"
 # enable history-based suggestions
 Set-PSReadLineOption -PredictionSource History
 Set-PSReadLineOption -PredictionViewStyle InlineView
-Set-PSReadLineOption -Colors @{ InlinePrediction = "#696969" }
+Set-PSReadLineOption -Colors @{ 
+    InlinePrediction = [ConsoleColor]::Gray
+    Command = [ConsoleColor]::Green
+    Comment = "#d3d3d3"
+    Variable = [ConsoleColor]::Magenta #"#ffa500"
+}
 # Default History Count is 4096
 Set-PSReadLineOption -MaximumHistoryCount 1000
 # prevents to write lines that match password|asplaintext|token|key|secret to the log.
