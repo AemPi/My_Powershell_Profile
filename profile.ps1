@@ -1,12 +1,12 @@
 ######################################################
-# Requirements
-######################################################
-# - Latest PSReadLine Module
-
-######################################################
 # For SSH Tab Complition
 ######################################################
 using namespace System.Management.Automation
+
+######################################################
+# Imported Modules
+######################################################
+#Import-Module PSReadline -RequiredVersion 2.1.0
 
 ######################################################
 # Login Check if Admin or not
@@ -22,10 +22,10 @@ if([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -ma
 else
 {}
 
-<#
 ######################################################
 # Commandline Loggin
 ######################################################
+<#
 $PSlogging = "P:\PSlogging"
 if((Test-Path $PSlogging))
 {
@@ -35,14 +35,15 @@ else
 {
     $PSlogging = "C:\PSlogging"
 }
-
+#>
 ######################################################
 # Powershell Transcript Logging
+# !!!!ATTENTION IF THIS IS ENABLED PASSWORDS WILL BE LOGGED!!!!!
 ######################################################
-
+<#
 if (-not (Test-Path $PSlogging))
 {
-    New-Item -Type Directory $PSlogging | Out-Null
+    New-Item -Type Directory $PSlogging
 }
 $dateStamp = Get-Date -Format ('yyyy-MM-dd_HH-mm-ss')
 try
@@ -56,6 +57,7 @@ catch [System.Management.Automation.PSNotSupportedException]
     Write-Host "No transcript. Not supported in this host."
 }
 #>
+
 ######################################################
 # MOTD
 ######################################################
@@ -115,9 +117,9 @@ Function Format-FileSize() {
 
 function Get-ItemPermissions
 {
-    write-host "Possible Mode Values: d - Directory, a - Archive, r - Read-only,
+    write-host "$([System.Environment]::NewLine)Possible Mode Values: d - Directory, a - Archive, r - Read-only,
                       h - Hidden, s - System, l - Reparse point, symlink, etc."
-    Get-ChildItem $Args[0] -Force |
+    Get-ChildItem $Args[0] -Force | Sort-Object Mode |
         Format-Table Mode, @{N='Owner';E={(Get-Acl $_.FullName).Owner}}, @{N="FileSize";E={ Format-FileSize -size $_.Length }}, LastWriteTime, @{N='Name';E={if($_.Target) {$_.Name+' -> '+$_.Target} else {$_.Name}}}
 }
 
@@ -150,17 +152,18 @@ Set-PSReadlineKeyHandler -Key DownArrow -Function HistorySearchForward
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 # Responds to various error and ambiguous conditions Default is Audible
 Set-PSReadLineOption -BellStyle None
+#Gives completions/suggestions from historical commands
+Set-PSReadLineOption -PredictionSource History
+Set-PSReadLineOption -Colors @{ 
+    InlinePrediction = "Gray"
+    Command = "Green"
+    Comment = "Gray"
+    Variable = [ConsoleColor]::Magenta #"#ffa500" 
+}
+#Set-PSReadLineOption -PredictionViewStyle ListView
+
 # Linux like History File
 Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_history.txt"
-# enable history-based suggestions
-Set-PSReadLineOption -PredictionSource History
-Set-PSReadLineOption -PredictionViewStyle InlineView
-Set-PSReadLineOption -Colors @{ 
-    InlinePrediction = [ConsoleColor]::Gray
-    Command = [ConsoleColor]::Green
-    Comment = "#d3d3d3"
-    Variable = [ConsoleColor]::Magenta #"#ffa500"
-}
 # Default History Count is 4096
 Set-PSReadLineOption -MaximumHistoryCount 1000
 # prevents to write lines that match password|asplaintext|token|key|secret to the log.
@@ -300,6 +303,49 @@ Register-ArgumentCompleter -CommandName ssh,scp,sftp -Native -ScriptBlock {
     | ForEach-Object { $_ -replace "host ", "" }`
     | Sort-Object -Unique
 
+    # Config File
+    $hosts2 = Get-Content $Env:USERPROFILE\.ssh\config.d\* `
+    | Select-String -Pattern "^Host "`
+    | ForEach-Object { $_ -replace "host ", "" }`
+    | Sort-Object -Unique
+
+    # For now just assume it's a hostname.
+    $textToComplete = $wordToComplete
+    $generateCompletionText = {
+        param($x)
+        $x
+    }
+    if ($wordToComplete -match "^(?<user>[-\w/\\]+)@(?<host>[-.\w]+)$") {
+        $textToComplete = $Matches["host"]
+        $generateCompletionText = {
+            param($hostname)
+            #$Matches["user"] + "@" + $hostname
+            $hostname
+        }
+    }
+
+    $hosts `
+    | Where-Object { $_ -like "${textToComplete}*" } `
+    | ForEach-Object { [CompletionResult]::new((&$generateCompletionText($_)), $_, [CompletionResultType]::ParameterValue, $_) }
+
+    $hosts2 `
+    | Where-Object { $_ -like "${textToComplete}*" } `
+    | ForEach-Object { [CompletionResult]::new((&$generateCompletionText($_)), $_, [CompletionResultType]::ParameterValue, $_) }
+}
+
+################################################################################
+# PSSession Host Tab Complition from pss Config file
+# 
+################################################################################
+Register-ArgumentCompleter -CommandName New-PSSession,pss -Native -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    
+    # Config File
+    $hosts = Get-Content $Env:USERPROFILE\.pss\config `
+    | Select-String -Pattern "^Host "`
+    | ForEach-Object { $_ -replace "host ", "" }`
+    | Sort-Object -Unique
+
     # For now just assume it's a hostname.
     $textToComplete = $wordToComplete
     $generateCompletionText = {
@@ -369,6 +415,55 @@ function ChangeDirectory {
     }
 }
 
+######################################################
+# ssh Like function for New-PSSession
+#######################################################
+function pss()
+{
+    Param
+    (
+        [Parameter(Mandatory=$true)][string[]]$RemoteComputer,
+        [Parameter(Mandatory=$false)][string[]]$UserName,
+        [Parameter(Mandatory=$false)][switch[]]$d
+    )
+
+    if($d)
+    {
+        $PSs = New-PSSession -Authentication Kerberos -ComputerName $RemoteComputer
+        Enter-PSSession $PSs
+    }
+    else
+    {
+        $PSs = New-PSSession -ComputerName $RemoteComputer -Credential (Get-Credential -UserName $UserName -Message "Enter Password")
+        Enter-PSSession $PSs
+    }
+}
+
+# https://www.jesusninoc.com/11/05/simulate-key-press-by-user-with-sendkeys-and-powershell/
+function Do-SendKeys {
+    param (
+        $SENDKEYS,
+        $WINDOWTITLE
+    )
+    $wshell = New-Object -ComObject wscript.shell;
+    IF ($WINDOWTITLE) {$wshell.AppActivate($WINDOWTITLE)}
+    Sleep 1
+    IF ($SENDKEYS) {$wshell.SendKeys($SENDKEYS)}
+}
+
+
+
+Set-PSReadlineKeyHandler -Key 'ctrl+d' {
+    <#
+    $hostname = (Get-History -Count 1 ).CommandLine.Split(" ")[1]
+    "Close Session to $hostname ..."
+    Remove-PSSession -ComputerName $hostname 
+    #>
+    Exit-PSSession
+    Do-SendKeys -SENDKEYS '{enter}'
+    Get-PSSession | Remove-PSSession
+}
+
 
 ######################################################
 # Aliases
@@ -387,7 +482,7 @@ function global:prompt
     # If Prompt is in Admin Mode then set # else set $
     if($IsAdmin -eq "Yes"){$PromptSign = "#"}else{$PromptSign = "$"}
 
-    # replace the path from USERPROFILE environment variable (if itï¿½s there) in current path by ~
+    # replace the path from USERPROFILE environment variable (if it’s there) in current path by ~
     $currentDir = $pwd.Path.Replace($env:USERPROFILE, "~")
     $GitStatus = GitStat
     $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
