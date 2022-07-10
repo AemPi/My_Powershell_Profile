@@ -7,20 +7,25 @@ using namespace System.Management.Automation
 # Imported Modules
 ######################################################
 #Import-Module PSReadline -RequiredVersion 2.1.0
+#Import-Module PSReadline
 
 ######################################################
 # Login Check if Admin or not
 ######################################################
-if([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544"))
+function Test-IsAdmin()
 {
-    $IsAdmin = "Yes"
+    # Alternative: [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")
+    ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] “Administrator”)
+}
+$IsAdmin = (Test-IsAdmin)
+if($IsAdmin)
+{
     write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
-    #write-host "# ACHTUNG DIE POWERSHELL SESSION LAEUFT MIT ADMINISTRATOR RECHTEN!!!         #" -ForegroundColor Yellow -BackgroundColor Red
     write-host "# Attention This Session runs with elevated Privilege!!!                     #" -ForegroundColor Yellow -BackgroundColor Red
     write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
 }
-else
-{}
+
 
 ######################################################
 # Commandline Loggin
@@ -29,11 +34,7 @@ else
 $PSlogging = "P:\PSlogging"
 if((Test-Path $PSlogging))
 {
-    $PSlogging = "P:\PSlogging"
-}
-else
-{
-    $PSlogging = "C:\PSlogging"
+    $PSlogging = "$env:HOMEDRIVE\PSlogging"
 }
 #>
 ######################################################
@@ -81,10 +82,6 @@ write-host "########################################################" -Foregroun
 Write-host "System Uptime: $($uptime.days) Days, $($uptime.Hours) Hours, $($uptime.Minutes) Minutes" -ForegroundColor Green
 
 $Interface = Get-WmiObject win32_networkadapterconfiguration | WHERE {($_.IPAddress -ne $null) -and ($_.DefaultIPGateway -ne $null)}
-
-#$Interface = Get-WmiObject win32_networkadapterconfiguration `
-#| Select-Object -Property @{name='IPAddress';Expression={($_.IPAddress[0])}},MacAddress `
-#| Where-Object IPAddress -Like '10.*'
 
 if ($null -eq $interface)
 {
@@ -290,12 +287,13 @@ Set-PSReadLineKeyHandler -Key Backspace `
 ################################################################################
 Register-ArgumentCompleter -CommandName ssh,scp,sftp -Native -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
-    
+    <#
     # KnownHost file
-    #$knownHosts = Get-Content ${Env:HOMEPATH}\.ssh\known_hosts `
-    #| ForEach-Object { ([string]$_).Split(' ')[0] } `
-    #| ForEach-Object { $_.Split(',') } `
-    #| Sort-Object -Unique
+    $knownHosts = Get-Content ${Env:HOMEPATH}\.ssh\known_hosts `
+    | ForEach-Object { ([string]$_).Split(' ')[0] } `
+    | ForEach-Object { $_.Split(',') } `
+    | Sort-Object -Unique
+    #>
     
     # Config File
     $hosts = Get-Content $Env:USERPROFILE\.ssh\config `
@@ -451,14 +449,7 @@ function Do-SendKeys {
     IF ($SENDKEYS) {$wshell.SendKeys($SENDKEYS)}
 }
 
-
-
 Set-PSReadlineKeyHandler -Key 'ctrl+d' {
-    <#
-    $hostname = (Get-History -Count 1 ).CommandLine.Split(" ")[1]
-    "Close Session to $hostname ..."
-    Remove-PSSession -ComputerName $hostname 
-    #>
     Exit-PSSession
     Do-SendKeys -SENDKEYS '{enter}'
     Get-PSSession | Remove-PSSession
@@ -480,7 +471,7 @@ New-Alias -Name sudo -Value elevate-process
 function global:prompt
 {
     # If Prompt is in Admin Mode then set # else set $
-    if($IsAdmin -eq "Yes"){$PromptSign = "#"}else{$PromptSign = "$"}
+    if($IsAdmin){$PromptSign = "#"}else{$PromptSign = "$"}
 
     # replace the path from USERPROFILE environment variable (if it’s there) in current path by ~
     $currentDir = $pwd.Path.Replace($env:USERPROFILE, "~")
@@ -494,8 +485,15 @@ function global:prompt
 #######################################################
 # Create Custom Logfile
 #######################################################
-function Write-LogFile([string]$Message,[string]$Status,[string]$LogPath)
+function Write-LogFile()
 {
+    Param
+    (
+        [Parameter(Mandatory=$true,Position=0)][ValidateSet('INFO','WARN','FAIL','OKAY','DEKO')][string[]]$Status,
+        [Parameter(Mandatory=$true,Position=1)][string[]]$Message,
+        [Parameter(Mandatory=$true,Position=2)]$LogPath
+    )
+
     $LogFileDate = Get-date -Format "yyyy-MM-dd HH:mm:ss"
     $DEKOcut = "================================================="
 
