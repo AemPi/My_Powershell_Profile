@@ -152,7 +152,7 @@ Set-PSReadLineOption -BellStyle None
 #Gives completions/suggestions from historical commands
 Set-PSReadLineOption -PredictionSource History
 Set-PSReadLineOption -Colors @{ 
-    InlinePrediction = "Gray"
+    InlinePrediction = "#696969" #"Gray"
     Command = "Green"
     Comment = "Gray"
     Variable = [ConsoleColor]::Magenta #"#ffa500" 
