@@ -1,4 +1,4 @@
-######################################################
+﻿######################################################
 # For SSH Tab Complition
 ######################################################
 using namespace System.Management.Automation
@@ -16,26 +16,22 @@ function Test-IsAdmin()
 {
     # Alternative: [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")
     ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
-    [Security.Principal.WindowsBuiltInRole] �Administrator�)
+    [Security.Principal.WindowsBuiltInRole] “Administrator”)
 }
 $IsAdmin = (Test-IsAdmin)
 if($IsAdmin)
 {
     write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
-    write-host "# Attention This Session runs with elevated Privilege!!!                     #" -ForegroundColor Yellow -BackgroundColor Red
+    write-host "# ⚠️ Attention This Session runs with elevated Privilege!!!              ⚠️  #" -ForegroundColor Yellow -BackgroundColor Red
     write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
 }
 
 
 ######################################################
-# Commandline Loggin
+# Commandline Loggin Path
 ######################################################
 <#
-$PSlogging = "P:\PSlogging"
-if((Test-Path $PSlogging))
-{
-    $PSlogging = "$env:HOMEDRIVE\PSlogging"
-}
+$PSlogging = "$env:HOMEDRIVE\PSlogging"
 #>
 ######################################################
 # Powershell Transcript Logging
@@ -473,13 +469,44 @@ function global:prompt
     # If Prompt is in Admin Mode then set # else set $
     if($IsAdmin){$PromptSign = "#"}else{$PromptSign = "$"}
 
-    # replace the path from USERPROFILE environment variable (if it�s there) in current path by ~
+    # replace the path from USERPROFILE environment variable (if it’s there) in current path by ~
     $currentDir = $pwd.Path.Replace($env:USERPROFILE, "~")
+    
+    # Git Status Calling Variable
     $GitStatus = GitStat
+    
+    # Date over the Prompt
     $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
     Write-Host $Content -ForegroundColor Yellow
-    return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $GitStatus $($PromptSign)"
-    #return " # "
+    
+    # Default Prompt
+    #return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $GitStatus $($PromptSign)"
+    
+    # Colored Prompt
+    # If you want the default (not Colored Prompt)
+    # add <# from here and #> after 'return " "'
+    # then uncommetn the default prompt above
+    #=================================================
+    # Colors for Prompt
+    $OpenBraketColor    = [ConsoleColor]::Red
+    $UserColor          = [ConsoleColor]::Cyan
+    $AtSignColor        = [ConsoleColor]::White
+    $HostColor          = [ConsoleColor]::Green
+    $ClosingBraketColor = [ConsoleColor]::Red
+    $CurrDirColor       = [ConsoleColor]::Cyan
+    $GitStatausColor    = [ConsoleColor]::Yellow
+    $PromptSignColor    = [ConsoleColor]::Red
+
+    # Prompt | -n = NoNewLine | -f = ForegroundColor
+    Write-Host "["                    -n -f $OpenBraketColor
+    Write-Host "$($env:USERNAME)"     -n -f $UserColor
+    Write-Host "@"                    -n -f $AtSignColor
+    Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
+    Write-Host "]"                    -n -f $ClosingBraketColor
+    Write-Host " ($($currentDir))"    -n -f $CurrDirColor
+    Write-Host " $GitStatus "         -n -f $GitStatausColor
+    Write-Host "$($PromptSign)"       -n -f $PromptSignColor
+    return " "
 }
 
 #######################################################
