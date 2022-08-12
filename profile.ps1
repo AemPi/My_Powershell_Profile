@@ -21,9 +21,11 @@ function Test-IsAdmin()
 $IsAdmin = (Test-IsAdmin)
 if($IsAdmin)
 {
-    write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
-    write-host "# ⚠️ Attention This Session runs with elevated Privilege!!!              ⚠️  #" -ForegroundColor Yellow -BackgroundColor Red
-    write-host "##############################################################################" -ForegroundColor Yellow -BackgroundColor Red
+    $HeaderText = "# ⚠️ Attention This Session runs with elevated Privilege!!! ⚠️ #"
+    $HeaderDekoLine = "#"*$HeaderText.Length
+    write-host "$($HeaderDekoLine)" -ForegroundColor Yellow -BackgroundColor Red
+    write-host "$($HeaderText)" -ForegroundColor Yellow -BackgroundColor Red
+    write-host "$($HeaderDekoLine)" -ForegroundColor Yellow -BackgroundColor Red
 }
 
 
