@@ -99,7 +99,7 @@ write-host "########################################################" -Foregroun
 # https://superuser.com/questions/468782/show-human-readable-file-sizes-in-the-default-powershell-ls-command | From Indrek
 ######################################################
 Function Format-FileSize() {
-    Param ([int]$size)
+    Param ($size)
     If     ($size -gt 1TB) {[string]::Format("{0:0.00} TB", $size / 1TB)}
     ElseIf ($size -gt 1GB) {[string]::Format("{0:0.00} GB", $size / 1GB)}
     ElseIf ($size -gt 1MB) {[string]::Format("{0:0.00} MB", $size / 1MB)}
@@ -114,6 +114,48 @@ function Get-ItemPermissions
                       h - Hidden, s - System, l - Reparse point, symlink, etc."
     Get-ChildItem $Args[0] -Force | Sort-Object Mode |
         Format-Table Mode, @{N='Owner';E={(Get-Acl $_.FullName).Owner}}, @{N="FileSize";E={ Format-FileSize -size $_.Length }}, LastWriteTime, @{N='Name';E={if($_.Target) {$_.Name+' -> '+$_.Target} else {$_.Name}}}
+}
+
+function ls-DirSize()
+{
+    Param
+    (
+      [Parameter(Mandatory=$false)][string]$DirectoryPath  
+    )
+    
+    if([system.string]::IsNullOrEmpty($DirectoryPath))
+    {
+        $targetfolder='.'
+        $dataColl = @()
+        gci -force $targetfolder -ErrorAction SilentlyContinue | ? { $_ -is [io.directoryinfo] } | % {
+        $len = 0
+        gci -recurse -force $_.fullname -ErrorAction SilentlyContinue | % { $len += $_.length }
+        $foldername = $_.BaseName
+        $foldersize= '{0:N2}' -f (Format-FileSize -size $len)
+        $dataObject = New-Object PSObject
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Folder” -value $foldername
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Size” -value $foldersize
+        $dataColl += $dataObject
+        }
+        $dataColl | Format-Table -AutoSize
+    }
+    else
+    {
+        $targetfolder= "$DirectoryPath"
+        $dataColl = @()
+        gci -force $targetfolder -ErrorAction SilentlyContinue | ? { $_ -is [io.directoryinfo] } | % {
+        $len = 0
+        gci -recurse -force $_.fullname -ErrorAction SilentlyContinue | % { $len += $_.length }
+        $foldername = $_.BaseName
+        $foldersize= '{0:N2}' -f (Format-FileSize -size $len)
+        $dataObject = New-Object PSObject 
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Folder” -value $foldername
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Size” -value $foldersize
+        $dataColl += $dataObject
+        }
+        $dataColl | Format-Table -AutoSize
+    }
+    
 }
 
 ######################################################
@@ -146,7 +188,10 @@ Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 # Responds to various error and ambiguous conditions Default is Audible
 Set-PSReadLineOption -BellStyle None
 #Gives completions/suggestions from historical commands
-Set-PSReadLineOption -PredictionSource History
+if ($host.name -eq 'ConsoleHost') # or -notmatch 'ISE'
+{
+    Set-PSReadLineOption -PredictionSource History
+}
 Set-PSReadLineOption -Colors @{ 
     InlinePrediction = "#696969" #"Gray"
     Command = "Green"
@@ -414,22 +459,46 @@ function ChangeDirectory {
 #######################################################
 function pss()
 {
-    Param
+   Param
     (
         [Parameter(Mandatory=$true)][string[]]$RemoteComputer,
-        [Parameter(Mandatory=$false)][string[]]$UserName,
-        [Parameter(Mandatory=$false)][switch[]]$d
+        [Parameter(Mandatory=$false)][switch[]]$domain = $false
     )
 
-    if($d)
+    if($domain)
     {
-        $PSs = New-PSSession -Authentication Kerberos -ComputerName $RemoteComputer
-        Enter-PSSession $PSs
+        try
+        {
+            $PSs = New-PSSession -Authentication Kerberos -ComputerName $RemoteComputer -ErrorAction SilentlyContinue
+            Enter-PSSession $PSs
+        }
+        catch
+        {
+            Write-Warning "Wrong Username/Password $([System.Environment]::NewLine)$($Error[0])"
+        }
     }
     else
     {
-        $PSs = New-PSSession -ComputerName $RemoteComputer -Credential (Get-Credential -UserName $UserName -Message "Enter Password")
-        Enter-PSSession $PSs
+        $User = Read-Host "Username "
+        $PWord = Read-Host "Password " -AsSecureString
+
+        if(![System.String]::IsNullOrEmpty($User) -and !$PWord.Length -eq 0)
+        {
+            try
+            {
+                $Credentials = New-Object -TypeName PSCredential -ArgumentList $User, $PWord
+                $PSs = New-PSSession -ComputerName $RemoteComputer -Credential $Credentials -ErrorAction SilentlyContinue
+                Enter-PSSession $PSs
+            }
+            catch
+            {
+                Write-Warning "Wrong Username/Password Wrong $([System.Environment]::NewLine)$($Error[0])"
+            }
+        }
+        else
+        {
+            Write-Warning "Insufficient Credentials!"
+        }
     }
 }
 
@@ -451,6 +520,62 @@ Set-PSReadlineKeyHandler -Key 'ctrl+d' {
     Get-PSSession | Remove-PSSession
 }
 
+######################################################
+# df Like function for Get-Volume
+#######################################################
+Function Format-Byte() {
+    Param ($size)
+    $bytecount = $size 
+    switch -Regex ([math]::truncate([math]::log($bytecount,1024))) {
+        '^0' {"$bytecount Bytes"}
+        '^1' {"{0:n2} KB" -f ($bytecount / 1KB)}
+        '^2' {"{0:n2} MB" -f ($bytecount / 1MB)}
+        '^3' {"{0:n2} GB" -f ($bytecount / 1GB)}
+        '^4' {"{0:n2} TB" -f ($bytecount / 1TB)}
+        '^5' {"{0:n2} PB" -f ($bytecount / 1PB)}
+         Default {""}
+    }
+
+}
+
+Function FormatPercent()
+{
+    Param
+    ($Sizes)
+    $Percent = [Math]::round($Sizes)
+    "$Percent %"
+}
+
+function df()
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)][switch[]]$h = $false
+    )
+    if(!$h)
+    {
+        Get-psdrive -PSProvider FileSystem | Format-Table `
+                                                @{N='Drive';E={$_.Name}; Alignment="left"}, `
+                                                #@{N='Total';E={(Get-Volume -DriveLetter $_.Name).Size}}, `
+                                                @{N='Total';E={($_.Used + $_.Free)}; Alignment="right"}, `
+                                                @{N='Used';E={($_.Used)}; Alignment="right"}, `
+                                                @{N='Free';E={($_.Free)}; Alignment="right"}, `
+                                                @{N='%iUsed';E={FormatPercent -Sizes (($_.Used/($_.Used+$_.Free)) * 100)}; Alignment="right"}, `
+                                                @{N='Mounted';E={$_.DisplayRoot}; Alignment="left"} -AutoSize
+    }
+    else
+    {
+
+        Get-psdrive -PSProvider FileSystem | Format-Table `
+                                                @{N='Drive';E={$_.Name}; Alignment="left"}, `
+                                                #@{N='Total (GB)';E={[Math]::Round((Get-Volume -DriveLetter $_.Name).Size /1GB,2)}}, `
+                                                @{N='Total';E={(Format-Byte -size ($_.Used +$_.Free))}; Alignment="right"}, `
+                                                @{N='Used';E={(Format-Byte -size $_.Used)}; Alignment="right"}, `
+                                                @{N='Free';E={(Format-Byte -size $_.Free)}; Alignment="right"}, `
+                                                @{N='%iUsed';E={FormatPercent -Sizes (($_.Used/($_.Used+$_.Free)) * 100)}; Alignment="right"}, `
+                                                @{N='Mounted';E={$_.DisplayRoot}; Alignment="left"} -AutoSize
+    }
+}
 
 ######################################################
 # Aliases
