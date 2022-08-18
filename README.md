@@ -21,7 +21,7 @@ To get everything running you need to do the following things
 - Place the profile.ps1 File in your User folder "C:\User\\\<USERNAME>" and name it ".pwsh_profile.ps1"
 - Add a File Named "profile.ps1" under "C:\Windows\System32\WindowsPowerShell\v1.0" (for Powershell 5.1). Open the File in a Editor with Admin mode and put the line ". $env:userprofile\\\.pwsh_profile.ps1" in and Save it.
 
-For SSH functionality you need a folder in "C:\User\\\<USERNAME>" named ".ssh".
+For SSH functionality you need to install SSH. Then create a folder in "C:\User\\\<USERNAME>" named ".ssh". <= With Tab Completion for Hosts in the config File in the .ssh folder
 In this Folder you need a File "config" with ONLY you in the Security ACL with Full Access.
 The File Structre is Linux based:
 ```bash
@@ -37,7 +37,7 @@ After this you´re good to go and have fun!
 # Now you have the following Functions in your Powershell
 - ll (Linux like ls -lsah)
 - df / df -h $true (for Disk Space listing)
-- pss (new PS-Session -> ssh like)
+- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the .pss folder
   ```Powershell
     pss <FQDN/IP> -domain $true / $false #True for Domain Login via Kerberos. False with Username and Password
   ```
