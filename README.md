@@ -36,6 +36,7 @@ After this you´re good to go and have fun!
 
 # Now you have the following Functions in your Powershell
 - ll (Linux like ls -lsah)
+- ls-dirsize (for list folder size)
 - df / df -h $true (for Disk Space listing)
 - pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the .pss folder
   ```Powershell
