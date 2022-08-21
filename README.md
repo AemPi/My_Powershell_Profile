@@ -18,7 +18,7 @@ To get everything running you need to do the following things
     ```Powershell
     host <FQDN/IP>
     ```
-- Place the profile.ps1 File in your User folder "C:\User\\\<USERNAME>" and name it ".pwsh_profile.ps1"
+- Place the ".pwsh_profile.ps1" File in your User folder "C:\User\\\<USERNAME>"
 - Add a File Named "profile.ps1" under "C:\Windows\System32\WindowsPowerShell\v1.0" (for Powershell 5.1). Open the File in a Editor with Admin mode and put the line ". $env:userprofile\\\.pwsh_profile.ps1" in and Save it.
 
 For SSH functionality you need to install SSH. Then create a folder in "C:\User\\\<USERNAME>" named ".ssh". <= With Tab Completion for Hosts in the config File in the .ssh folder
