@@ -28,49 +28,9 @@ if($IsAdmin)
     write-host "$($HeaderDekoLine)" -ForegroundColor Yellow -BackgroundColor Red
 }
 
-
-######################################################
-# Commandline Loggin Path
-######################################################
-<#
-$PSlogging = "$env:HOMEDRIVE\PSlogging"
-#>
-######################################################
-# Powershell Transcript Logging
-# !!!!ATTENTION IF THIS IS ENABLED PASSWORDS WILL BE LOGGED!!!!!
-######################################################
-<#
-if (-not (Test-Path $PSlogging))
-{
-    New-Item -Type Directory $PSlogging
-}
-$dateStamp = Get-Date -Format ('yyyy-MM-dd_HH-mm-ss')
-try
-{
-    Get-ChildItem "$PSlogging" -Recurse | Where-Object { $_.LastWriteTime -lt (get-date).AddDays(-60) } | Remove-Item -Force -Confirm:$false
-    Start-Transcript "$PSlogging\PSconsole_$dateStamp.txt" | Out-Null
-}
-catch [System.Management.Automation.PSNotSupportedException]
-{
-    # ISE doesn't allow transcripts.
-    Write-Host "No transcript. Not supported in this host."
-}
-#>
-
 ######################################################
 # MOTD
 ######################################################
-
-# write-host "########################################################"     -ForegroundColor Green
-# Write-Host "Microsoft Windows Info"                                       -ForegroundColor Green
-# write-host "Windows System : $((Get-WmiObject win32_operatingsystem).caption) ($((Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ReleaseId))"   -ForegroundColor Green
-# write-host "Windows Version: $(([Environment]::OSVersion).VersionString)" -ForegroundColor Green
-# Write-Host "########################################################"     -ForegroundColor Green
-# Write-Host "Network Info" -ForegroundColor Green
-# write-host "Hostname  : $($env:COMPUTERNAME)" -ForegroundColor Green
-# Write-Host "Domain    : $($env:USERDNSDOMAIN)" -ForegroundColor Green
-
-
 $bootuptime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
 $CurrentDate = Get-Date
 $uptime = $CurrentDate - $bootuptime
@@ -91,9 +51,6 @@ else
     write-host "MAC-Adress   : $($Interface.MacAddress)" -ForegroundColor Green
 }
 write-host "########################################################" -ForegroundColor Green
-
-# write-host "Promt Log Folder : $($PSlogging)" -ForegroundColor Green
-# write-host "########################################################" -ForegroundColor Green
 
 
 ######################################################
@@ -653,10 +610,10 @@ function Write-LogFile()
 
     Switch ($Status)
       {
-        INFO { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        WARN { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Yellow -ForegroundColor Black ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        FAIL { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Red -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        OKAY { Write-Host $LogFileDate  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        INFO { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        WARN { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Yellow -ForegroundColor Black ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        FAIL { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Red -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
+        OKAY { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
         DEKO { Write-Host $DEKOcut ; $DEKOcut | Out-File  $LogPath -Append -Encoding utf8 }
       }
 }
