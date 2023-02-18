@@ -4,10 +4,17 @@
 using namespace System.Management.Automation
 
 ######################################################
+# Private Variables
+######################################################
+$sScriptPath = Split-Path -Parent $PSCommandPath
+$ConfigFolder = "$sScriptPath\.config"
+
+######################################################
 # Imported Modules
 ######################################################
 #Import-Module PSReadline -RequiredVersion 2.1.0
 #Import-Module PSReadline
+Import-Module "$($ConfigFolder)\default_module.psm1"
 
 ######################################################
 # Login Check if Admin or not
@@ -31,26 +38,19 @@ if($IsAdmin)
 ######################################################
 # MOTD
 ######################################################
-$bootuptime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
-$CurrentDate = Get-Date
-$uptime = $CurrentDate - $bootuptime
-
-write-host "Hello Friend!" -ForegroundColor Green
-write-host "########################################################" -ForegroundColor Green
-Write-host "System Uptime: $($uptime.days) Days, $($uptime.Hours) Hours, $($uptime.Minutes) Minutes" -ForegroundColor Green
-
-$Interface = Get-WmiObject win32_networkadapterconfiguration | WHERE {($_.IPAddress -ne $null) -and ($_.DefaultIPGateway -ne $null)}
-
-if ($null -eq $interface)
-{
-    Write-Host "No Active Connection!" -ForegroundColor Yellow -BackgroundColor Red
+if ((Test-Path "$ConfigFolder\misc\MOTD.ps1")) {
+    $MOTD = [System.Management.Automation.ScriptBlock]::Create("$ConfigFolder\misc\MOTD.ps1")
+    & $MOTD
 }
-else
-{
-    write-host "IPAdress     : $($Interface.IPAddress[0])" -ForegroundColor Green
-    write-host "MAC-Adress   : $($Interface.MacAddress)" -ForegroundColor Green
+else {
+    $bootuptime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
+    $CurrentDate = Get-Date
+    $uptime = $CurrentDate - $bootuptime
+    write-host "Hello Friend!" -ForegroundColor Green
+    write-host "########################################################" -ForegroundColor Green
+    Write-host "System Uptime: $($uptime.days) Days, $($uptime.Hours) Hours, $($uptime.Minutes) Minutes" -ForegroundColor Green
+    write-host "########################################################" -ForegroundColor Green
 }
-write-host "########################################################" -ForegroundColor Green
 
 
 ######################################################
@@ -86,14 +86,14 @@ function ls-DirSize()
     {
         $targetfolder='.'
         $dataColl = @()
-        gci -force $targetfolder -ErrorAction SilentlyContinue | ? { $_ -is [io.directoryinfo] } | % {
+        Get-ChildItem -force $targetfolder -ErrorAction SilentlyContinue | Where-Object { $_ -is [io.directoryinfo] } | ForEach-Object {
         $len = 0
-        gci -recurse -force $_.fullname -ErrorAction SilentlyContinue | % { $len += $_.length }
+        Get-ChildItem -recurse -force $_.fullname -ErrorAction SilentlyContinue | ForEach-Object { $len += $_.length }
         $foldername = $_.BaseName
         $foldersize= '{0:N2}' -f (Format-FileSize -size $len)
         $dataObject = New-Object PSObject
-        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Folder” -value $foldername
-        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Size” -value $foldersize
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name "Folder" -value $foldername
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name "Size" -value $foldersize
         $dataColl += $dataObject
         }
         $dataColl | Format-Table -AutoSize
@@ -102,14 +102,14 @@ function ls-DirSize()
     {
         $targetfolder= "$DirectoryPath"
         $dataColl = @()
-        gci -force $targetfolder -ErrorAction SilentlyContinue | ? { $_ -is [io.directoryinfo] } | % {
+        Get-ChildItem -force $targetfolder -ErrorAction SilentlyContinue | Where-Object { $_ -is [io.directoryinfo] } | ForEach-Object {
         $len = 0
-        gci -recurse -force $_.fullname -ErrorAction SilentlyContinue | % { $len += $_.length }
+        Get-ChildItem -recurse -force $_.fullname -ErrorAction SilentlyContinue | ForEach-Object { $len += $_.length }
         $foldername = $_.BaseName
         $foldersize= '{0:N2}' -f (Format-FileSize -size $len)
         $dataObject = New-Object PSObject 
-        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Folder” -value $foldername
-        Add-Member -inputObject $dataObject -memberType NoteProperty -name “Size” -value $foldersize
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name "Folder" -value $foldername
+        Add-Member -inputObject $dataObject -memberType NoteProperty -name "Size" -value $foldersize
         $dataColl += $dataObject
         }
         $dataColl | Format-Table -AutoSize
@@ -121,7 +121,7 @@ function ls-DirSize()
 # sudo for Powershell (Linux Like)
 # https://www.elasticsky.de/2012/12/powershell-sudo/
 ######################################################
-function elevate-process
+function grant-process
 {
     $file, [string]$arguments = $args
     $psi = new-object System.Diagnostics.ProcessStartInfo $file
@@ -462,20 +462,20 @@ function pss()
 }
 
 # https://www.jesusninoc.com/11/05/simulate-key-press-by-user-with-sendkeys-and-powershell/
-function Do-SendKeys {
+function Send-ExitKeys {
     param (
         $SENDKEYS,
         $WINDOWTITLE
     )
     $wshell = New-Object -ComObject wscript.shell;
     IF ($WINDOWTITLE) {$wshell.AppActivate($WINDOWTITLE)}
-    Sleep 1
+    Start-Sleep 1
     IF ($SENDKEYS) {$wshell.SendKeys($SENDKEYS)}
 }
 
 Set-PSReadlineKeyHandler -Key 'ctrl+d' {
     Exit-PSSession
-    Do-SendKeys -SENDKEYS '{enter}'
+    Send-ExitKeys -SENDKEYS '{enter}'
     Get-PSSession | Remove-PSSession
 }
 
@@ -560,8 +560,8 @@ function global:prompt
     $GitStatus = GitStat
     
     # Date over the Prompt
-    $Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-    Write-Host $Content -ForegroundColor Yellow
+    #$Content = $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+    #Write-Host $Content -ForegroundColor Yellow
     
     # Default Prompt
     #return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $GitStatus $($PromptSign)"
@@ -591,29 +591,4 @@ function global:prompt
     Write-Host " $GitStatus "         -n -f $GitStatausColor
     Write-Host "$($PromptSign)"       -n -f $PromptSignColor
     return " "
-}
-
-#######################################################
-# Create Custom Logfile
-#######################################################
-function Write-LogFile()
-{
-    Param
-    (
-        [Parameter(Mandatory=$true,Position=0)][ValidateSet('INFO','WARN','FAIL','OKAY','DEKO')][string[]]$Status,
-        [Parameter(Mandatory=$true,Position=1)][string[]]$Message,
-        [Parameter(Mandatory=$true,Position=2)]$LogPath
-    )
-
-    $LogFileDate = Get-date -Format "yyyy-MM-dd HH:mm:ss"
-    $DEKOcut = "================================================="
-
-    Switch ($Status)
-      {
-        INFO { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        WARN { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Yellow -ForegroundColor Black ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        FAIL { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Red -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        OKAY { Write-Host "[$LogFileDate]"  "[$Status]" ": " $Message -BackgroundColor Green -ForegroundColor White ; $LogFileDate + " [$Status]" + ": $Message" | Out-File $LogPath -Append -Encoding utf8 }
-        DEKO { Write-Host $DEKOcut ; $DEKOcut | Out-File  $LogPath -Append -Encoding utf8 }
-      }
 }
