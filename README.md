@@ -18,10 +18,19 @@ To get everything running you need to do the following things
     ```Powershell
     host <FQDN/IP>
     ```
-- Place the ".pwsh_profile.ps1" File in your User folder "C:\User\\\<USERNAME>"
-- Add a File Named "profile.ps1" under "C:\Windows\System32\WindowsPowerShell\v1.0" (for Powershell 5.1). Open the File in a Editor with Admin mode and put the line ". $env:userprofile\\\.pwsh_profile.ps1" in and Save it.
 
-For SSH functionality you need to install SSH. Then create a folder in "C:\User\\\<USERNAME>" named ".ssh". <= With Tab Completion for Hosts in the config File in the .ssh folder
+- Add a File Named "profile.ps1" under "C:\Windows\System32\WindowsPowerShell\v1.0" (for Powershell 5.1). Open the File in a Editor with Admin mode and put the following line in it 
+```Powershell
+. "C:\<Path to the folder>\.pwsh_profile.ps1"
+```
+
+For SSH functionality you need to install SSH. 
+
+```Powershell
+Add-WindowsCapability -Online -Name OpenSSH.Client*
+```
+
+Then create a folder in "C:\User\\\<USERNAME>" named ".ssh". <= With Tab Completion for Hosts in the config File in the .ssh folder
 In this Folder you need a File "config" with ONLY you in the Security ACL with Full Access.
 The File Structre is Linux based:
 ```bash
@@ -38,7 +47,10 @@ After this you´re good to go and have fun!
 - ll (Linux like ls -lsah)
 - ls-dirsize (for list folder size)
 - df / df -h $true (for Disk Space listing)
-- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the .pss folder
+- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the .
+- and much more in the default_module.psm1 under the Folder .config
+
+pss folder
   ```Powershell
     pss <FQDN/IP> -domain $true / $false #True for Domain Login via Kerberos. False with Username and Password
   ```
