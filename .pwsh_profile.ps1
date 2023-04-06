@@ -14,8 +14,9 @@ $ConfigFolder = "$sScriptPath\.config"
 ######################################################
 #Import-Module PSReadline -RequiredVersion 2.1.0
 #Import-Module PSReadline
-Import-Module "$($ConfigFolder)\default_module.psm1"
-
+#Import-Module "$($ConfigFolder)\default_module.psm1"
+$CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\misc\CustomModules" -Filter "*.psm1").FullName
+foreach($Module in $CustomModules){Import-Module $Module}
 ######################################################
 # Login Check if Admin or not
 ######################################################
@@ -52,6 +53,19 @@ else {
     write-host "########################################################" -ForegroundColor Green
 }
 
+Function Reload-Modules()
+{
+    try
+    {
+        $CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\misc\CustomModules" -Filter "*.psm1").FullName
+        foreach($Module in $CustomModules){Import-Module $Module -Force}
+    }
+    catch
+    {
+        $Fail = $Error[0].Exception.Message
+        Write-Warning $Fail
+    }
+}
 
 ######################################################
 # List Files and Folders (Linux Like)
