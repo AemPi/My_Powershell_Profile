@@ -48,7 +48,7 @@ After this you´re good to go and have fun!
 - ls-dirsize (for list folder size)
 - df / df -h $true (for Disk Space listing)
 - pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the .
-- and much more in the default_module.psm1 under the Folder .config
+- and much more in the Folder .config\misc\CustomModules
 
 pss folder
   ```Powershell
