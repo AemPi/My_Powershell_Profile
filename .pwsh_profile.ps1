@@ -15,7 +15,7 @@ $ConfigFolder = "$sScriptPath\.config"
 #Import-Module PSReadline -RequiredVersion 2.1.0
 #Import-Module PSReadline
 #Import-Module "$($ConfigFolder)\default_module.psm1"
-$CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\misc\CustomModules" -Filter "*.psm1").FullName
+$CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\CustomModules" -Filter "*.psm1").FullName
 foreach($Module in $CustomModules){Import-Module $Module}
 ######################################################
 # Login Check if Admin or not
@@ -39,8 +39,8 @@ if($IsAdmin)
 ######################################################
 # MOTD
 ######################################################
-if ((Test-Path "$ConfigFolder\misc\MOTD.ps1")) {
-    $MOTD = [System.Management.Automation.ScriptBlock]::Create("$ConfigFolder\misc\MOTD.ps1")
+if ((Test-Path "$ConfigFolder\MOTD.ps1")) {
+    $MOTD = [System.Management.Automation.ScriptBlock]::Create("$ConfigFolder\MOTD.ps1")
     & $MOTD
 }
 else {
@@ -57,7 +57,7 @@ Function Reload-Modules()
 {
     try
     {
-        $CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\misc\CustomModules" -Filter "*.psm1").FullName
+        $CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\CustomModules" -Filter "*.psm1").FullName
         foreach($Module in $CustomModules){Import-Module $Module -Force}
     }
     catch
