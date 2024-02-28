@@ -15,30 +15,23 @@ function Update-WinSCPPrtable()
     $ConfigFolder = $sScriptPath.Replace("\CustomModules","")
     $LocalWinSCPPath = "$ConfigFolder\WinSCP"
     $WinSCPLocalVersionFile = "$LocalWinSCPPath\winscpversion.txt"
-
     if(!(Test-Path $WinSCPLocalVersionFile)){"1.0.0" | Out-File $WinSCPLocalVersionFile}
     $InstalledWinSCPVersion = Get-Content -Path $WinSCPLocalVersionFile
     $URL = "https://winscp.net/eng/downloads.php"
-    $SiteContent = (Invoke-WebRequest -Method Get -Uri $URL -UseBasicParsing).rawcontent
-    $html = New-Object -ComObject "HTMLFile"
 
     try
     {
-        # Works when Office is Installed
-        $html.IHTMLDocument2_write($SiteContent)
+        $SiteResponse = Invoke-WebRequest -Uri $URL -UseBasicParsing
+        $WinSCPOnlineVersion = ($SiteResponse.Links | SELECT href | WHERE {$_.href -like "*Portable.*"}).href -replace("/download/WinSCP-","") -replace("-Portable.zip","")
     }
     catch
     {
-        # Works if Office is not Installed
-        $src = [System.Text.Encoding]::Unicode($SiteContent)
-        $html.write($src)
+        Write-Host "Update Error: $($Error[0].Exception.Message)$([System.Environment]::NewLine)$($Error[0].Exception.ToString())"
+        break
     }
-    $WinSCPOnlineVersion = (($html.all.tags("a") | Where {($_.innerText -like "*Download WinSCP*") -and ($_.innerText -notlike "*beta*")} ).innerText -replace("Download WinSCP ","") -split(" "))[0]
-
 
     if($InstalledWinSCPVersion -ne $WinSCPOnlineVersion)
     {
-        Write-Host "New WinSCP Version found: $($WinSCPOnlineVersion)" -ForegroundColor Yellow
         Write-Host "Updating WinSCP-Portable, please wait ..." -ForegroundColor Yellow
         try
         {

@@ -580,6 +580,10 @@ function global:prompt
     # Default Prompt
     #return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $GitStatus $($PromptSign)"
     
+    # PROMPT DESIGN - DEFAULT IS oneline
+    #$PROMPT_ALTERNATIVE="oneline"
+    $PROMPT_ALTERNATIVE="twoline"
+
     # Colored Prompt
     # If you want the default (not Colored Prompt)
     # add <# from here and #> after 'return " "'
@@ -595,14 +599,39 @@ function global:prompt
     $GitStatausColor    = [ConsoleColor]::Yellow
     $PromptSignColor    = [ConsoleColor]::Red
 
-    # Prompt | -n = NoNewLine | -f = ForegroundColor
-    Write-Host "["                    -n -f $OpenBraketColor
-    Write-Host "$($env:USERNAME)"     -n -f $UserColor
-    Write-Host "@"                    -n -f $AtSignColor
-    Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
-    Write-Host "]"                    -n -f $ClosingBraketColor
-    Write-Host " ($($currentDir))"    -n -f $CurrDirColor
-    Write-Host " $GitStatus "         -n -f $GitStatausColor
-    Write-Host "$($PromptSign)"       -n -f $PromptSignColor
-    return " "
+    if ($PROMPT_ALTERNATIVE -eq "oneline") {
+        Write-Host "["                    -n -f $OpenBraketColor
+        Write-Host "$($env:USERNAME)"     -n -f $UserColor
+        Write-Host "@"                    -n -f $AtSignColor
+        Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
+        Write-Host "]"                    -n -f $ClosingBraketColor
+        Write-Host " ($($currentDir))"    -n -f $CurrDirColor
+        Write-Host " $GitStatus "         -n -f $GitStatausColor
+        Write-Host "$($PromptSign)>"      -n -f $PromptSignColor
+        return " "
+    }
+    elseif ($PROMPT_ALTERNATIVE -eq "twoline") {
+        # Prompt | -n = NoNewLine | -f = ForegroundColor
+        Write-Host "╭─["                    -n -f $OpenBraketColor
+        Write-Host "$($env:USERNAME)"     -n -f $UserColor
+        Write-Host "@"                    -n -f $AtSignColor
+        Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
+        Write-Host "]"                    -n -f $ClosingBraketColor
+        Write-Host " ($($currentDir))"    -n -f $CurrDirColor
+        Write-Host " $GitStatus "          -f $GitStatausColor
+        Write-Host "╰─$($PromptSign)>"     -n   -f $PromptSignColor
+        return " "
+    }
+    else {
+        Write-Host "["                    -n -f $OpenBraketColor
+        Write-Host "$($env:USERNAME)"     -n -f $UserColor
+        Write-Host "@"                    -n -f $AtSignColor
+        Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
+        Write-Host "]"                    -n -f $ClosingBraketColor
+        Write-Host " ($($currentDir))"    -n -f $CurrDirColor
+        Write-Host " $GitStatus "         -n -f $GitStatausColor
+        Write-Host "$($PromptSign)>"      -n -f $PromptSignColor
+        return " "
+    }
+    
 }
