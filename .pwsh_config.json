@@ -1,0 +1,45 @@
+{
+    "NAME": ".pwsh_config.json",
+    "DATE": "2023-06-07",
+    "VERSION": "1.0",
+    "MAINTAINER": "Markus Pröpper (AemPi)",
+    "REPOSITORY": "https://github.com/AemPi",
+
+    "Info": {
+        "Name": ".pwsh_config.json",
+        "Date": "2023-05-26",
+        "Version": "1.0",
+        "Maintainer": "Markus Pröpper (AemPi)"
+    },
+    "Paths": {
+        "Home": "$HOME",
+        "ConfigFolder": "$env:userprofile\\.config\\PWSH\\misc",
+        "Logfolder": "",
+        "Modules": "$($ConfigFolder)\\CustomModules",
+        "MOTD": "$ConfigFolder\\MOTD.ps1",
+        "PSWHhistory": "$($env:userprofile)\\.pwsh_history.txt",
+        "SSHconfig": "$env:USERPROFILE\\.ssh\\config",
+        "PSSconfig": "$env:USERPROFILE\\.pss\\config"
+    },
+    "Colors": {
+        "ConsoleColor_Red": "Red",
+        "ConsoleColor_Green": "Green",
+        "ConsoleColor_White": "White",
+        "ConsoleColor_Cyan": "Cyan",
+        "ConsoleColor_Gray": "Gray",
+        "CustomColor_Gray": "#696969",
+        "CustomColor_Orange": "#ffa500",
+
+        "OpenBraketColor":"Red",
+        "UserColor":"Cyan",
+        "AtSignColor":"White",
+        "HostColor":"Green",
+        "CloseBraketColor":"Red",
+        "CurrDirColor":"Cyan",
+        "GitStatusColor":"Yellow",
+        "PromptSignColor":"Red"
+    },
+    "Shortcuts": {
+        "PSSdisconect": "ctrl+d"
+    }
+}

@@ -7,7 +7,19 @@ using namespace System.Management.Automation
 # Private Variables
 ######################################################
 $sScriptPath = Split-Path -Parent $PSCommandPath
-$ConfigFolder = "$sScriptPath\.config"
+$ConfigJson = Get-Content "$sScriptPath\.pwsh_config.json" -raw  | ConvertFrom-Json
+# Paths from JSON Config
+$ConfigFolder = $ExecutionContext.InvokeCommand.ExpandString($ConfigJson.Paths.ConfigFolder)
+$ConfigModules = $ExecutionContext.InvokeCommand.ExpandString($ConfigJson.Paths.Modules)
+$ConfigMOTD = $ExecutionContext.InvokeCommand.ExpandString($ConfigJson.Paths.MOTD)
+$ConfigPSWHhistory = $ExecutionContext.InvokeCommand.ExpandString($ConfigJson.Paths.PSWHhistory)
+$ConfigSSHconfig = $ExecutionContext.InvokeCommand.ExpandString($ConfigJson.Paths.SSHconfig)
+$ConfigPSSconfig = $ExecutionContext.InvokeCommand.ExpandString($ConfigJson.Paths.PSSconfig)
+# PSReadLine Colors
+$InlinePrediction = "$($ConfigJson.Colors.CustomColor_Gray)"
+$Command = "$($ConfigJson.Colors.ConsoleColor_Green)"
+$Comment = "$($ConfigJson.Colors.ConsoleColor_Gray)"
+$Variable = "$($ConfigJson.Colors.CustomColor_Orange)" 
 
 ######################################################
 # Imported Modules
@@ -39,8 +51,8 @@ if($IsAdmin)
 ######################################################
 # MOTD
 ######################################################
-if ((Test-Path "$ConfigFolder\MOTD.ps1")) {
-    $MOTD = [System.Management.Automation.ScriptBlock]::Create("$ConfigFolder\MOTD.ps1")
+if ((Test-Path "$ConfigMOTD")) {
+    $MOTD = [System.Management.Automation.ScriptBlock]::Create("$ConfigMOTD")
     & $MOTD
 }
 else {
@@ -57,7 +69,7 @@ Function Reload-Modules()
 {
     try
     {
-        $CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\CustomModules" -Filter "*.psm1").FullName
+        $CustomModules = (Get-ChildItem -Path "$ConfigModules" -Filter "*.psm1").FullName
         foreach($Module in $CustomModules){Import-Module $Module -Force}
     }
     catch
@@ -166,15 +178,15 @@ if ($host.name -eq 'ConsoleHost') # or -notmatch 'ISE'
     Set-PSReadLineOption -PredictionSource History
 }
 Set-PSReadLineOption -Colors @{ 
-    InlinePrediction = "#696969" #"Gray"
-    Command = "Green"
-    Comment = "Gray"
-    Variable = [ConsoleColor]::Magenta #"#ffa500" 
+    InlinePrediction = "$($InlinePrediction)"
+    Command = "$($Command)"
+    Comment = "$($Comment)"
+    Variable = "$($Variable)"
 }
 #Set-PSReadLineOption -PredictionViewStyle ListView
 
 # Linux like History File
-Set-PSReadLineOption -HistorySavePath "$($env:userprofile)\.pwsh_history.txt"
+Set-PSReadLineOption -HistorySavePath "$ConfigPSWHhistory"
 # Default History Count is 4096
 Set-PSReadLineOption -MaximumHistoryCount 1000
 # prevents to write lines that match password|asplaintext|token|key|secret to the log.
@@ -310,13 +322,13 @@ Register-ArgumentCompleter -CommandName ssh,scp,sftp -Native -ScriptBlock {
     #>
     
     # Config File
-    $hosts = Get-Content $Env:USERPROFILE\.ssh\config `
+    $hosts = Get-Content $ConfigSSHconfig `
     | Select-String -Pattern "^Host "`
     | ForEach-Object { $_ -replace "host ", "" }`
     | Sort-Object -Unique
 
     # Config File
-    $hosts2 = Get-Content $Env:USERPROFILE\.ssh\config.d\* `
+    $hosts2 = Get-Content "$ConfigSSHconfig.d\*" `
     | Select-String -Pattern "^Host "`
     | ForEach-Object { $_ -replace "host ", "" }`
     | Sort-Object -Unique
@@ -353,7 +365,7 @@ Register-ArgumentCompleter -CommandName New-PSSession,pss -Native -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
     
     # Config File
-    $hosts = Get-Content $Env:USERPROFILE\.pss\config `
+    $hosts = Get-Content $ConfigPSSconfig `
     | Select-String -Pattern "^Host "`
     | ForEach-Object { $_ -replace "host ", "" }`
     | Sort-Object -Unique
@@ -590,14 +602,18 @@ function global:prompt
     # then uncommetn the default prompt above
     #=================================================
     # Colors for Prompt
-    $OpenBraketColor    = [ConsoleColor]::Red
-    $UserColor          = [ConsoleColor]::Cyan
-    $AtSignColor        = [ConsoleColor]::White
-    $HostColor          = [ConsoleColor]::Green
-    $ClosingBraketColor = [ConsoleColor]::Red
-    $CurrDirColor       = [ConsoleColor]::Cyan
-    $GitStatausColor    = [ConsoleColor]::Yellow
-    $PromptSignColor    = [ConsoleColor]::Red
+    $OpenBraketColor  = $ConfigJson.Colors.OpenBraketColor
+    $UserColor        = $ConfigJson.Colors.UserColor
+    $AtSignColor      = $ConfigJson.Colors.AtSignColor
+    $HostColor        = $ConfigJson.Colors.HostColor
+    $ClosingBraketColor = $ConfigJson.Colors.CloseBraketColor
+    $CurrDirColor     = $ConfigJson.Colors.CurrDirColor
+    $GitStatusColor   = $ConfigJson.Colors.GitStatusColor
+    $PromptSignColor  = $ConfigJson.Colors.PromptSignColor
+
+    # Works with Windows 10
+    $Firstline = $([regex]::Unescape('\u256d\u2500'))  #╭─
+    $SecondLine = $([regex]::Unescape('\u2570\u2500')) #╰─
 
     if ($PROMPT_ALTERNATIVE -eq "oneline") {
         Write-Host "["                    -n -f $OpenBraketColor
@@ -606,20 +622,20 @@ function global:prompt
         Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
         Write-Host "]"                    -n -f $ClosingBraketColor
         Write-Host " ($($currentDir))"    -n -f $CurrDirColor
-        Write-Host " $GitStatus "         -n -f $GitStatausColor
+        Write-Host " $GitStatus "         -n -f $GitStatusColor
         Write-Host "$($PromptSign)>"      -n -f $PromptSignColor
         return " "
     }
     elseif ($PROMPT_ALTERNATIVE -eq "twoline") {
         # Prompt | -n = NoNewLine | -f = ForegroundColor
-        Write-Host "╭─["                    -n -f $OpenBraketColor
+        Write-Host "$Firstline["          -n -f $OpenBraketColor
         Write-Host "$($env:USERNAME)"     -n -f $UserColor
         Write-Host "@"                    -n -f $AtSignColor
         Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
         Write-Host "]"                    -n -f $ClosingBraketColor
         Write-Host " ($($currentDir))"    -n -f $CurrDirColor
-        Write-Host " $GitStatus "          -f $GitStatausColor
-        Write-Host "╰─$($PromptSign)>"     -n   -f $PromptSignColor
+        Write-Host " $GitStatus "          -f $GitStatusColor
+        Write-Host "$SecondLine$($PromptSign)>"     -n   -f $PromptSignColor
         return " "
     }
     else {
@@ -629,7 +645,7 @@ function global:prompt
         Write-Host "$($env:COMPUTERNAME)" -n -f $HostColor
         Write-Host "]"                    -n -f $ClosingBraketColor
         Write-Host " ($($currentDir))"    -n -f $CurrDirColor
-        Write-Host " $GitStatus "         -n -f $GitStatausColor
+        Write-Host " $GitStatus "         -n -f $GitStatusColor
         Write-Host "$($PromptSign)>"      -n -f $PromptSignColor
         return " "
     }

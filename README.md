@@ -1,37 +1,26 @@
-# My_Powershell_Profile
+# Install
 
 To get everything running you need to do the following things
 - Open a Powershell in Admin Mode
-- install the module "PSReadLine" Latest!
+- Clone this into ".config" (you need to create a folder named .config)
+  ```Powershell
+  mkdir "$env:userprofile\.config"
+  ```
+  ```
+  git clone https://github.com/AemPi/My_Powershell_Profile.git ~/.config/PWSH
+  ```
+- cd into the ".config\PWSH" Directory and run the install Script
   - ```Powershell
-    install-module psreadline -force
-    ```
-- Add a Folder named ".pss" in your User Directory
-  - ```Powershell
-    mkdir "$env:userprofile\.pss"
-    ```
-  - In the .pss Folder Create a file named "config"
-    ```Powershell
-    New-Item -Path "$env:userprofile\.pss" -Name "config" -ItemType File
-    ```
-    The Entrys in the "config" file are quite simple:
-    ```Powershell
-    host <FQDN/IP>
+    .\install.ps1
     ```
 
-- Add a File Named "profile.ps1" under "C:\Windows\System32\WindowsPowerShell\v1.0" (for Powershell 5.1). Open the File in a Editor with Admin mode and put the following line in it 
-```Powershell
-. "C:\<Path to the folder>\.pwsh_profile.ps1"
-```
 
-For SSH functionality you need to install SSH. 
+## For SSH functionality you need to install SSH. 
 
 ```Powershell
 Add-WindowsCapability -Online -Name OpenSSH.Client*
 ```
-
-Then create a folder in "C:\User\\\<USERNAME>" named ".ssh". <= With Tab Completion for Hosts in the config File in the .ssh folder
-In this Folder you need a File "config" with ONLY you in the Security ACL with Full Access.
+In the .ssh folder you find a File "config" (Set ONLY you in the Security ACL with Full Access).
 The File Structre is Linux based:
 ```bash
 Host <alias>
@@ -42,12 +31,21 @@ Host <alias>
 ```
 After this you´re good to go and have fun!
 
+## pss / new PS-Session
+- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the "C:\Users\<YOURNAME>\.pss" Directory
+- In the config File you need only the following syntax  
+  ```Bash
+  host testhost.domain
+  or
+  host testhost
+  or
+  host IP
+  ```
 
 # Now you have the following Functions in your Powershell
 - ll (Linux like ls -lsah)
 - ls-dirsize (for list folder size)
 - df / df -h $true (for Disk Space listing)
-- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the .
 - and much more in the Folder .config\misc\CustomModules
 
 pss folder
@@ -81,3 +79,10 @@ pss folder
   # D0 = D for Delted
   # Ut0= U for Untracked
   ```
+
+  # Uninstall
+- Open a Powershell in Admin Mode
+- cd into the ".config\PWSH" Directory and run the install Script
+  - ```Powershell
+    .\uninstall.ps1
+    ```

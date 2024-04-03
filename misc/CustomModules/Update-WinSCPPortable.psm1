@@ -22,7 +22,7 @@ function Update-WinSCPPrtable()
     try
     {
         $SiteResponse = Invoke-WebRequest -Uri $URL -UseBasicParsing
-        $WinSCPOnlineVersion = ($SiteResponse.Links | SELECT href | WHERE {$_.href -like "*Portable.*"}).href -replace("/download/WinSCP-","") -replace("-Portable.zip","")
+        $WinSCPOnlineVersion = ($SiteResponse.Links | SELECT href | WHERE {$_.href -like "*Portable.*"}).href -replace("/download/WinSCP-","") -replace("-Portable.zip","") -replace("/download","")
     }
     catch
     {
@@ -35,7 +35,7 @@ function Update-WinSCPPrtable()
         Write-Host "Updating WinSCP-Portable, please wait ..." -ForegroundColor Yellow
         try
         {
-            $NewDownloadLink = "https://winscp.net/download/WinSCP-$($WinSCPOnlineVersion)-Portable.zip"
+            $NewDownloadLink = "https://winscp.net/download/WinSCP-$($WinSCPOnlineVersion)-Portable.zip/download"
             
             $webclient = [System.Net.WebClient]::new()
             $webclient.DownloadFile("https://sourceforge.net/projects/winscp/files/WinSCP/$($WinSCPOnlineVersion)/WinSCP-$($WinSCPOnlineVersion)-Portable.zip/download","$LocalWinSCPPath\WinSCP-$($WinSCPOnlineVersion)-Portable.zip")
@@ -48,7 +48,8 @@ function Update-WinSCPPrtable()
         }
         catch
         {
-            Write-Host "Update Error: $($Error[0].Exception.Message)$([System.Environment]::NewLine)$($Error[0].Exception.ToString())"
+            #Write-Host "Update Error: $($Error[0].Exception.Message)$([System.Environment]::NewLine)$($Error[0].Exception.ToString())"
+            Write-Host "Update Error: $($_.Exception.Message)$([System.Environment]::NewLine)$($_.Exception.ToString())"
         }
         
     }
