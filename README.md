@@ -32,7 +32,7 @@ Host <alias>
 After this you´re good to go and have fun!
 
 ## pss / new PS-Session
-- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the "C:\Users\<YOURNAME>\.pss" Directory
+- pss (new PS-Session -> ssh like) <= With Tab Completion for Hosts in the config File in the "C:\Users\\\<YOURNAME>\\\.pss" Directory
 - In the config File you need only the following syntax  
   ```Bash
   host testhost.domain
