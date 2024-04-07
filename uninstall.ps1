@@ -26,7 +26,7 @@ else {
             if((Test-Path $GlobalProfileFile)){Remove-Item -Path $GlobalProfileFile}
         }
         
-        $DeleteConDirectorys = Read-Host "Do you want to remove the .pss and .ssh folder in your Homedirectory? (y/n)"
+        $DeleteConDirectorys = Read-Host "Do you want to remove the .pss and .ssh folder/configs in your Homedirectory? (y/n)"
         if($DeleteConDirectorys -eq "y")
         {
             Write-Host "[-] Remove the .pss and .ssh folder in your Homedirectory..." -ForegroundColor Red
