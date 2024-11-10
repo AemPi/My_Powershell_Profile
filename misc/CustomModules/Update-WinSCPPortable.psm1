@@ -30,21 +30,27 @@ function Update-WinSCPPrtable()
         break
     }
 
-    if($InstalledWinSCPVersion -ne $WinSCPOnlineVersion)
+    foreach($Version in $WinSCPOnlineVersion){
+        if ($Version -notlike "*.beta") {
+            $OnlineVersion = $Version
+        }
+    }
+    
+    if($InstalledWinSCPVersion -ne $OnlineVersion)
     {
         Write-Host "Updating WinSCP-Portable, please wait ..." -ForegroundColor Yellow
         try
         {
-            $NewDownloadLink = "https://winscp.net/download/WinSCP-$($WinSCPOnlineVersion)-Portable.zip/download"
+            $NewDownloadLink = "https://winscp.net/download/WinSCP-$($OnlineVersion)-Portable.zip/download"
             
             $webclient = [System.Net.WebClient]::new()
-            $webclient.DownloadFile("https://sourceforge.net/projects/winscp/files/WinSCP/$($WinSCPOnlineVersion)/WinSCP-$($WinSCPOnlineVersion)-Portable.zip/download","$LocalWinSCPPath\WinSCP-$($WinSCPOnlineVersion)-Portable.zip")
+            $webclient.DownloadFile("https://sourceforge.net/projects/winscp/files/WinSCP/$($OnlineVersion)/WinSCP-$($OnlineVersion)-Portable.zip/download","$LocalWinSCPPath\WinSCP-$($OnlineVersion)-Portable.zip")
             
-            Expand-Archive -Path "$LocalWinSCPPath\WinSCP-$($WinSCPOnlineVersion)-Portable.zip" -DestinationPath "$LocalWinSCPPath" -Force
-            $WinSCPOnlineVersion | Out-File $InstalledWinSCPVersion | Out-Null
-            Remove-Item -Path "$LocalWinSCPPath\WinSCP-$($WinSCPOnlineVersion)-Portable.zip"
-            $WinSCPOnlineVersion | Out-File $WinSCPLocalVersionFile
-            Write-Host "Update Complete! Latest Version '$($WinSCPOnlineVersion)' is now Installed" -ForegroundColor Green
+            Expand-Archive -Path "$LocalWinSCPPath\WinSCP-$($OnlineVersion)-Portable.zip" -DestinationPath "$LocalWinSCPPath" -Force
+            $OnlineVersion | Out-File $InstalledWinSCPVersion | Out-Null
+            Remove-Item -Path "$LocalWinSCPPath\WinSCP-$($OnlineVersion)-Portable.zip"
+            $OnlineVersion | Out-File $WinSCPLocalVersionFile
+            Write-Host "Update Complete! Latest Version '$($OnlineVersion)' is now Installed" -ForegroundColor Green
         }
         catch
         {
@@ -55,9 +61,8 @@ function Update-WinSCPPrtable()
     }
     else
     {
-        "You´re on the Latest WinSCP-Portable Verion: $($WinSCPOnlineVersion)"
+        "You´re on the Latest WinSCP-Portable Verion: $($OnlineVersion)"
     }
 }
-
 
 $FunctionsToExport = "Update-WinSCPPrtable"
