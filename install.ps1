@@ -48,8 +48,15 @@ Show-Menu -Title 'My Menu'
                 Write-Host "Install PSReadline.." -ForegroundColor Yellow
                 Install-Module PSReadline -Force
                 '. "'+$($ProfileString)+'"' | Out-File $UserProfileFile
-                Copy-Item -Path "$MiscFolder\Templates\.pss" -Destination "$env:USERPROFILE" -Recurse
-                Copy-Item -Path "$MiscFolder\Templates\.ssh" -Destination "$env:USERPROFILE" -Recurse
+                $ChoicePSS = (Read-Host "Do you want to copy a default pss/Remote-PSSesion config? (y/n)").ToLower()
+                if ($ChoicePSS -eq "y") {
+                    Copy-Item -Path "$MiscFolder\Templates\.pss" -Destination "$env:USERPROFILE" -Recurse
+                }
+                                
+                $ChoiceSSH = (Read-Host "Do you want to copy a default ssh config? (y/n)").ToLower()
+                if ($ChoiceSSH -eq "y") {
+                    Copy-Item -Path "$MiscFolder\Templates\.ssh" -Destination "$env:USERPROFILE" -Recurse
+                }
             }
             catch {
                 Write-Host "Error: $($_.Exception.Message)$([System.Environment]::NewLine)$($_.Exception.ToString())"
@@ -66,12 +73,12 @@ Show-Menu -Title 'My Menu'
                 Write-Host "Install PSReadline.." -ForegroundColor Yellow
                 Install-Module PSReadline -Force
                 '. "'+$($ProfileString)+'"' | Out-File $GlobalProfileFile
-                $ChoicePSS = Read-Host "Do you want to copy a default pss/Remote-PSSesion config? (y/n)"
+                $ChoicePSS = (Read-Host "Do you want to copy a default pss/Remote-PSSesion config? (y/n)").ToLower()
                 if ($ChoicePSS -eq "y") {
                     Copy-Item -Path "$MiscFolder\Templates\.pss" -Destination "$env:USERPROFILE" -Recurse
                 }
                                 
-                $ChoiceSSH = Read-Host "Do you want to copy a default ssh config? (y/n)"
+                $ChoiceSSH = (Read-Host "Do you want to copy a default ssh config? (y/n)").ToLower()
                 if ($ChoiceSSH -eq "y") {
                     Copy-Item -Path "$MiscFolder\Templates\.ssh" -Destination "$env:USERPROFILE" -Recurse
                 }

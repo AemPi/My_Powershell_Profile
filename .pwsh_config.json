@@ -39,6 +39,10 @@
         "GitStatusColor":"Yellow",
         "PromptSignColor":"Red"
     },
+    "PROMPT": {
+        "_Description": "Set one of the following Values(oneline id Default): oneline or twolines",
+        "PROMPT_Lines": "twoline" 
+    },
     "Shortcuts": {
         "PSSdisconect": "ctrl+d"
     }

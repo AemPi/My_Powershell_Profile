@@ -15,9 +15,23 @@ function New-SSHKey()
         [Parameter(Mandatory=$false,Position=0)][switch[]]$PassPhrase = $false
     )
 
+    function Test-IsAdmin()
+    {
+        # Alternative: [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")
+        ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+        [Security.Principal.WindowsBuiltInRole] "Administrator")
+    }
+    
+    $isAdmin = Test-IsAdmin
+    if(!$isAdmin)
+    {
+        Write-Host "Please run 'new-SSHKey' in Admin mode!" -ForegroundColor Red
+        break   
+    }
+
     $ScriptPath = Split-Path -Parent $PSCommandPath
     $winSCPCom = "$(($ScriptPath).replace('CustomModules',''))WinSCP\WinSCP.com"
-    $SSHcommand = (Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*').state
+    $SSHcommand = (Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*').state 
 
     if(!(Test-Path $env:USERPROFILE\Desktop\$BenutzerName))
     {

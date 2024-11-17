@@ -24,8 +24,6 @@ $Variable = "$($ConfigJson.Colors.CustomColor_Orange)"
 ######################################################
 # Imported Modules
 ######################################################
-#Import-Module PSReadline -RequiredVersion 2.1.0
-#Import-Module PSReadline
 #Import-Module "$($ConfigFolder)\default_module.psm1"
 $CustomModules = (Get-ChildItem -Path "$($ConfigFolder)\CustomModules" -Filter "*.psm1").FullName
 foreach($Module in $CustomModules){Import-Module $Module}
@@ -592,9 +590,11 @@ function global:prompt
     # Default Prompt
     #return "[$($env:USERNAME)@$($env:COMPUTERNAME)] ($($currentDir)) $GitStatus $($PromptSign)"
     
-    # PROMPT DESIGN - DEFAULT IS oneline
-    #$PROMPT_ALTERNATIVE="oneline"
-    $PROMPT_ALTERNATIVE="twoline"
+    # PROMPT DESIGN
+    # is set in .pwsh_config.json
+    # DEFAULT IS oneline
+    # oneline or twolines
+    $PROMPT_ALTERNATIVE=$ConfigJson.PROMPT.PROMPT_Lines
 
     # Colored Prompt
     # If you want the default (not Colored Prompt)
