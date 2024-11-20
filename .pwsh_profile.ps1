@@ -567,7 +567,7 @@ function df()
 New-Alias -Name "ll" -Value Get-ItemPermissions
 Remove-Item alias:\cd
 New-Alias cd ChangeDirectory
-New-Alias -Name sudo -Value elevate-process
+New-Alias -Name sudo -Value grant-process
 
 #######################################################
 # Prompt Section

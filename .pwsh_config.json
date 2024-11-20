@@ -40,7 +40,7 @@
         "PromptSignColor":"Red"
     },
     "PROMPT": {
-        "_Description": "Set one of the following Values(oneline id Default): oneline or twolines",
+        "_Description": "Set one of the following Values(oneline id Default): oneline or twoline",
         "PROMPT_Lines": "twoline" 
     },
     "Shortcuts": {
